@@ -1,44 +1,91 @@
-# Mantine Vite template
+# Geriatric Care Assessment Form
 
-## Features
+A single-page clinical assessment application designed for visiting nurses checking on elderly patients at home. Built with **React 19**, **TypeScript**, **Mantine v9**, and validated with **Zod 4**.
 
-This template comes with the following features:
+---
 
-- [PostCSS](https://postcss.org/) with [mantine-postcss-preset](https://mantine.dev/styles/postcss-preset)
-- [TypeScript](https://www.typescriptlang.org/)
-- [Storybook](https://storybook.js.org/)
-- [Vitest](https://vitest.dev/) setup with [React Testing Library](https://testing-library.com/docs/react-testing-library/intro)
-- [Vite+](https://viteplus.dev/) unified toolchain: Vite, Vitest, Oxlint and Oxfmt are run with `vp` and configured in `vite.config.mjs`
+## Tech Stack & Architecture
 
-## Vite+ CLI
+- **React 19** + **TypeScript**
+- **UI Framework**: [Mantine 9](https://mantine.dev/) (`@mantine/core`, `@mantine/dates`, `@mantine/form`, `@mantine/hooks`)
+- **Schema & Validation**: [Zod 4](https://zod.dev/) with native Standard Schema integration via Mantine's `schemaResolver`
+- **Testing**: [Vitest](https://vitest.dev/) + [React Testing Library](https://testing-library.com/)
+- **Toolchain**: Vite+ (`vp`) with Oxlint, Oxfmt, and PostCSS
 
-The template works without any global installation: `vp` is installed as a dev dependency and all npm scripts use it.
+---
 
-Optionally, you can install the [global `vp` CLI](https://viteplus.dev/guide/global-cli).
-It automatically switches to the Node.js version pinned in `.node-version` and lets you run commands directly, for example `vp dev` or `vp check --fix` instead of `yarn vp check --fix`.
+## Features & Implementation Highlights
 
-## npm scripts
+1. **10 Clinical Fields**:
+   - `mrn`: Medical record number (`TextInput`, placeholder `MRN-004821`)
+   - `patientName`: Patient name (`TextInput`, 2–60 characters)
+   - `dateOfBirth`: Date of birth (`DateInput`, YYYY-MM-DD)
+   - `assessmentDate`: Assessment date (`DateInput`, restricted with `maxDate={today}`)
+   - `mobility`: Mobility status (`Select`, dynamically generated from `MOBILITY` constant with humanized labels)
+   - `barthelIndex`: Barthel Index score (`NumberInput`, step 5, range 0–100, `clampBehavior="none"`)
+   - `medicationCount`: Regular medications count (`NumberInput`, range 0–30, `clampBehavior="none"`)
+   - `pharmacistReviewRequested`: Pharmacist review flag (`Checkbox`)
+   - `followUpDate`: Next review date (`DateInput`, YYYY-MM-DD)
+   - `consentObtained`: Informed consent verification (`Checkbox`)
 
-## Build and dev scripts
+2. **Schema & Validation Integrity**:
+   - **No Rule Duplication**: All validation logic is driven strictly by the Zod 4 schema via `schemaResolver(assessmentSchema)`. No hand-written validation functions or JSX conditions.
+   - **Type Derivation**: Form values type is derived mapped directly from `Assessment` (`z.infer<typeof assessmentSchema>`) without duplicate hand-written interfaces and with zero `any`.
+   - **Clinical Score Integrity**: `clampBehavior="none"` ensures values typed by the clinician are never quietly rounded or clamped by the UI, but rejected with clear clinical error messages.
+   - **Interactive Validation Timing**: Validation runs on blur and on submit. Untouched fields stay quiet until interaction.
+   - **Empty Form Guarantees**: Exactly 9 errors appear on submitting an empty form, with zero cross-field noise due to guarded `.refine()` predicates.
 
-- `dev` – start development server
-- `build` – build production version of the app
-- `build:analyze` – build the app and open bundle size visualization (`dist/stats.html`)
-- `preview` – locally preview production build
+3. **Clinician UX**:
+   - **"Load sample patient" Button**: Automatically populates valid fixture data and clears field errors.
+   - **Async Submission Simulation**: Simulated ~800ms save with disabled loading button state, followed by a teal success `Alert` rendering the parsed JSON in a `Code` block.
 
-### Testing scripts
+---
 
-- `check` – checks formatting, lint rules and TypeScript types with `vp check`
-- `check:fix` – same as `check`, fixes formatting and auto-fixable lint errors
-- `typecheck` – checks TypeScript types
-- `lint` – runs oxlint and stylelint
-- `format:test` – checks files with oxfmt
-- `vitest` – runs vitest tests
-- `vitest:watch` – starts vitest watch
-- `test` – runs `check`, `stylelint`, `vitest` and `build` scripts
+## Getting Started
 
-### Other scripts
+### Prerequisites
+- Node.js `^20.19.0 || >=22.0.0`
+- Corepack / Yarn 4
 
-- `storybook` – starts storybook dev server
-- `storybook:build` – build production storybook bundle to `storybook-static`
-- `format:write` – formats all files with oxfmt
+### Installation
+```bash
+yarn install
+```
+
+### Development Server
+```bash
+yarn dev
+```
+Open [http://localhost:5173](http://localhost:5173) in your browser.
+
+### Running Full Verification
+Runs formatting check (`vp check`), stylelint, vitest test suites, and production TypeScript build:
+```bash
+yarn test
+```
+
+### Running Tests
+```bash
+yarn vitest
+```
+
+---
+
+## Test Coverage
+
+Two core specification tests are implemented in `src/features/assessment/assessment.test.tsx`:
+1. **Schema Boundary Test (`safeParse`)**:
+   - Verifies a patient turning exactly 60 on the assessment date (`1966-08-07` on visit `2026-08-07`) is accepted.
+   - Verifies a patient one day short of 60 (`1966-08-08`) is rejected with `"This pathway is for patients aged 60 and over"` on `dateOfBirth`.
+2. **Rendered Form Integration Test (`RTL`)**:
+   - Loads the sample patient fixture via the UI button, submits the form, and asserts the save handler was invoked with the exact parsed values.
+3. **Empty Form Validation Test**:
+   - Asserts exactly 9 field errors appear on empty submit, while optional/untouched fields stay quiet.
+
+---
+
+## Project Decisions & Notes
+
+- **Zod 4 & Date Handling**: Zod 4 uses `z.iso.date()` expecting `'YYYY-MM-DD'` strings. Mantine 9's `DateInput` natively produces ISO date strings, avoiding `Date` object timezone quirks.
+- **Dynamic Mobility Options**: `MOBILITY` tuple values (including any future snake_case additions) are converted into title-cased readable labels on the fly.
+- **Time Spent**: ~1.5 hours.
