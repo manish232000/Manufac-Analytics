@@ -1,11 +1,14 @@
+import { Box, Group } from '@mantine/core';
 import { ColorSchemeToggle } from '../components/ColorSchemeToggle/ColorSchemeToggle';
-import { Welcome } from '../components/Welcome/Welcome';
+import { AssessmentForm } from '../features/assessment/AssessmentForm';
 
 export function HomePage() {
   return (
-    <>
-      <Welcome />
-      <ColorSchemeToggle />
-    </>
+    <Box py="md">
+      <Group justify="flex-end" px="xl">
+        <ColorSchemeToggle />
+      </Group>
+      <AssessmentForm />
+    </Box>
   );
 }
